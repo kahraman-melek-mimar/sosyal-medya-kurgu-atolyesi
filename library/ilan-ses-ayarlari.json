@@ -1,7 +1,7 @@
 {
   "_aciklama": "Seslendirme ve avatar ayarları. Beğendiğiniz sonucu verdiyse değiştirmeyin: her video aynı ses ve tonla çıkar. API anahtarları ve ses/avatar kimlikleri .env dosyasındadır, burada değil.",
   "elevenlabs": {
-    "model_id": "eleven_multilingual_v2",
+    "model_id": "eleven_v4",
     "seed": 42,
     "voice_settings": {
       "stability": 0.55,

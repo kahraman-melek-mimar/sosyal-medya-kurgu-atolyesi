@@ -12,31 +12,36 @@ export const sozlukYukle = (dosya = path.join(KOK, "library/telaffuz/sozluk.tr.j
 const BIRLER = ["", "bir", "iki", "üç", "dört", "beş", "altı", "yedi", "sekiz", "dokuz"];
 const ONLAR = ["", "on", "yirmi", "otuz", "kırk", "elli", "altmış", "yetmiş", "seksen", "doksan"];
 
-const ucBasamak = (n) => {
+const ucBasamak = (n, ara = " ") => {
   const y = Math.floor(n / 100), o = Math.floor((n % 100) / 10), b = n % 10;
-  return [y === 0 ? "" : y === 1 ? "yüz" : `${BIRLER[y]} yüz`, ONLAR[o], BIRLER[b]].filter(Boolean).join(" ");
+  return [y === 0 ? "" : y === 1 ? "yüz" : `${BIRLER[y]}${ara}yüz`, ONLAR[o], BIRLER[b]].filter(Boolean).join(ara);
 };
 
-/** 0 – 999.999.999.999 arası tam sayıyı Türkçe okunuşa çevirir. */
-export const sayiOku = (n) => {
+/**
+ * 0 – 999.999.999.999 arası tam sayıyı Türkçe okunuşa çevirir.
+ * bitisik: her bölük tek kelime ("ikiyüzaltmışiki", "onikimilyon beşyüzbin"). Seslendirme bunu kullanır:
+ * ayrı yazılınca ses motoru kelime aralarında duraksıyor ("iki yüz altmış … iki").
+ */
+export const sayiOku = (n, bitisik = false) => {
   n = Number(n);
+  const ara = bitisik ? "" : " ";
   if (!Number.isFinite(n)) return String(n);
   if (n === 0) return "sıfır";
-  if (n < 0) return `eksi ${sayiOku(-n)}`;
+  if (n < 0) return `eksi ${sayiOku(-n, bitisik)}`;
   const parcalar = [];
   const birimler = [[1e9, "milyar"], [1e6, "milyon"], [1e3, "bin"]];
   let kalan = n;
   for (const [deger, ad] of birimler) {
     const k = Math.floor(kalan / deger);
-    if (k > 0) parcalar.push(k === 1 && ad === "bin" ? "bin" : `${ucBasamak(k)} ${ad}`);
+    if (k > 0) parcalar.push(k === 1 && ad === "bin" ? "bin" : `${ucBasamak(k, ara)}${ara}${ad}`);
     kalan %= deger;
   }
-  if (kalan > 0) parcalar.push(ucBasamak(kalan));
+  if (kalan > 0) parcalar.push(ucBasamak(kalan, ara));
   return parcalar.join(" ");
 };
 
 /** "12,5" → "on iki buçuk"; "3,25" → "üç virgül yirmi beş". */
-const ondalikOku = (tam, kesir) => (kesir === "5" ? `${sayiOku(tam)} buçuk` : `${sayiOku(tam)} virgül ${sayiOku(Number(kesir))}`);
+const ondalikOku = (tam, kesir, b = false) => (kesir === "5" ? `${sayiOku(tam, b)} buçuk` : `${sayiOku(tam, b)} virgül ${sayiOku(Number(kesir), b)}`);
 
 const SIRA_SON = {
   bir: "birinci", iki: "ikinci", üç: "üçüncü", dört: "dördüncü", beş: "beşinci", altı: "altıncı", yedi: "yedinci",
@@ -44,22 +49,25 @@ const SIRA_SON = {
   elli: "ellinci", altmış: "altmışıncı", yetmiş: "yetmişinci", seksen: "sekseninci", doksan: "doksanıncı",
   yüz: "yüzüncü", bin: "bininci", milyon: "milyonuncu", milyar: "milyarıncı",
 };
-/** 3 → "üçüncü", 21 → "yirmi birinci". */
-export const siraOku = (n) => {
-  const k = sayiOku(n).split(" ");
-  k[k.length - 1] = SIRA_SON[k[k.length - 1]] ?? k[k.length - 1];
+/** 3 → "üçüncü", 21 → "yirmi birinci" (bitisik: "yirmibirinci"). */
+export const siraOku = (n, bitisik = false) => {
+  const k = sayiOku(n, bitisik).split(" ");
+  const son = k[k.length - 1];
+  // Bitişik yazımda son kelime "yirmibir" gibi olur: sondaki sayı adını bulup sıra ekini ona uygula.
+  const kok = Object.keys(SIRA_SON).filter((x) => son.endsWith(x)).sort((a, b) => b.length - a.length)[0];
+  if (kok) k[k.length - 1] = son.slice(0, son.length - kok.length) + SIRA_SON[kok];
   return k.join(" ");
 };
 
 const sayiTemizle = (s) => Number(s.replace(/\./g, "")); // "12.500.000" → 12500000
 
-/** Telefon: 0542 361 77 91 → "sıfır beş yüz kırk iki, üç yüz altmış bir, yetmiş yedi, doksan bir". */
+/** Telefon: 0542 361 77 91 → "sıfır beşyüzkırkiki üçyüzaltmışbir yetmişyedi doksanbir" (virgülsüz: akıcı okunur). */
 const telefonOku = (m) => {
   const r = m.replace(/\D/g, "");
   const g = r.length === 11 ? [r.slice(0, 4), r.slice(4, 7), r.slice(7, 9), r.slice(9)] : r.length === 10 ? [r.slice(0, 3), r.slice(3, 6), r.slice(6, 8), r.slice(8)] : [r];
   return g
-    .map((p) => (p.startsWith("0") ? `sıfır ${sayiOku(Number(p.slice(1)))}` : sayiOku(Number(p))))
-    .join(", ");
+    .map((p) => (p.startsWith("0") ? `sıfır ${sayiOku(Number(p.slice(1)), true)}` : sayiOku(Number(p), true)))
+    .join(" ");
 };
 
 const kacis = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -84,21 +92,21 @@ export const okunusaCevir = (metin, sozluk = sozlukYukle()) => {
   // Telefon (05xx / 0312 …), boşluk/tire/parantez ile
   t = t.replace(/(?<!\d)\(?0\d{3}\)?[\s-]?\d{3}[\s-]?\d{2}[\s-]?\d{2}(?!\d)/g, (m) => telefonOku(m));
   // Para: "12.500.000 lira" / "12,5 milyon lira" (TL sözlükte "lira" oldu)
-  t = t.replace(/(\d+),(\d+)\s*(milyon|milyar|bin)/g, (_, a, b, c) => `${ondalikOku(Number(a), b)} ${c}`);
+  t = t.replace(/(\d+),(\d+)\s*(milyon|milyar|bin)/g, (_, a, b, c) => `${ondalikOku(Number(a), b, true)} ${c}`);
   // Oda sayısı 3+1, 6+2, 4,5+1
-  t = t.replace(/(\d+),5\s*\+\s*(\d+)/g, (_, a, b) => `${sayiOku(Number(a))} buçuk artı ${sayiOku(Number(b))}`);
-  t = t.replace(/(\d+)\s*\+\s*(\d+)/g, (_, a, b) => `${sayiOku(Number(a))} artı ${sayiOku(Number(b))}`);
+  t = t.replace(/(\d+),5\s*\+\s*(\d+)/g, (_, a, b) => `${sayiOku(Number(a), true)} buçuk artı ${sayiOku(Number(b), true)}`);
+  t = t.replace(/(\d+)\s*\+\s*(\d+)/g, (_, a, b) => `${sayiOku(Number(a), true)} artı ${sayiOku(Number(b), true)}`);
   // Metrekare
-  t = t.replace(/(\d[\d.]*)\s*(m²|m2|㎡|metrekare)(?![\p{L}])/gu, (_, n) => `${sayiOku(sayiTemizle(n))} metrekare`);
+  t = t.replace(/(\d[\d.]*)\s*(m²|m2|㎡|metrekare)(?![\p{L}])/gu, (_, n) => `${sayiOku(sayiTemizle(n), true)} metrekare`);
   t = t.replace(/(?<![\p{L}])(m²|㎡)/gu, "metrekare");
   // Yüzde
-  t = t.replace(/%\s*(\d+)(?:,(\d+))?/g, (_, a, b) => `yüzde ${b ? ondalikOku(Number(a), b) : sayiOku(Number(a))}`);
+  t = t.replace(/%\s*(\d+)(?:,(\d+))?/g, (_, a, b) => `yüzde ${b ? ondalikOku(Number(a), b, true) : sayiOku(Number(a), true)}`);
   // Sıra sayısı: "3. kat", "2. el" (ardından küçük harfle başlayan kelime)
-  t = t.replace(/(\d+)\.\s+(?=\p{Ll})/gu, (_, n) => `${siraOku(Number(n))} `);
+  t = t.replace(/(\d+)\.\s+(?=\p{Ll})/gu, (_, n) => `${siraOku(Number(n), true)} `);
   // Ondalık: 2,5 → iki buçuk
-  t = t.replace(/(\d+),(\d+)/g, (_, a, b) => ondalikOku(Number(a), b));
+  t = t.replace(/(\d+),(\d+)/g, (_, a, b) => ondalikOku(Number(a), b, true));
   // Binlik ayraçlı ve düz sayılar
-  t = t.replace(/\d{1,3}(?:\.\d{3})+|\d+/g, (m) => sayiOku(sayiTemizle(m)));
+  t = t.replace(/\d{1,3}(?:\.\d{3})+|\d+/g, (m) => sayiOku(sayiTemizle(m), true));
   // Konum ayraçları: "Gölbaşı / Karşıyaka" , " - " → virgül (doğal duraklama)
   t = t.replace(/\s+[/–—-]\s+/g, ", ");
   t = t.replace(/\s{2,}/g, " ").replace(/\s+([,.!?;:])/g, "$1");

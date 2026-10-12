@@ -5,15 +5,16 @@ import { okunusaCevir, sayiOku, siraOku, seslendirmePlani } from "./lib/okunus.m
 const vakalar = [
   [sayiOku(0), "sıfır"], [sayiOku(1000), "bin"], [sayiOku(1250), "bin iki yüz elli"], [sayiOku(2015), "iki bin on beş"],
   [sayiOku(12500000), "on iki milyon beş yüz bin"], [sayiOku(101), "yüz bir"], [sayiOku(1000000), "bir milyon"],
-  [siraOku(3), "üçüncü"], [siraOku(21), "yirmi birinci"], [siraOku(10), "onuncu"],
+  [siraOku(3), "üçüncü"], [siraOku(21), "yirmi birinci"], [siraOku(10), "onuncu"], [siraOku(21, true), "yirmibirinci"],
+  [sayiOku(262, true), "ikiyüzaltmışiki"], [sayiOku(12500000, true), "onikimilyon beşyüzbin"],
   [okunusaCevir("Satılık villa 6+2"), "Satılık villa altı artı iki"],
-  [okunusaCevir("309 m² brüt, 262 m2 net"), "üç yüz dokuz metrekare brüt, iki yüz altmış iki metrekare net"],
+  [okunusaCevir("309 m² brüt, 262 m2 net"), "üçyüzdokuz metrekare brüt, ikiyüzaltmışiki metrekare net"],
   [okunusaCevir("Gölbaşı / Karşıyaka Mh. - Ankara"), "Gölbaşı, Karşıyaka Mahallesi, Ankara"],
-  [okunusaCevir("Fiyat 12.500.000 TL"), "Fiyat on iki milyon beş yüz bin lira"],
-  [okunusaCevir("12,5 milyon TL"), "on iki buçuk milyon lira"],
-  [okunusaCevir("Hemen arayın: 0542 361 77 91"), "Hemen arayın: sıfır beş yüz kırk iki, üç yüz altmış bir, yetmiş yedi, doksan bir"],
+  [okunusaCevir("Fiyat 12.500.000 TL"), "Fiyat onikimilyon beşyüzbin lira"],
+  [okunusaCevir("12,5 milyon TL"), "oniki buçuk milyon lira"],
+  [okunusaCevir("Hemen arayın: 0542 361 77 91"), "Hemen arayın: sıfır beşyüzkırkiki üçyüzaltmışbir yetmişyedi doksanbir"],
   [okunusaCevir("3. kat, %20 peşin"), "üçüncü kat, yüzde yirmi peşin"],
-  [okunusaCevir("Coldwell Banker güvencesiyle"), "Koldvel Benkır güvencesiyle"],
+  [okunusaCevir("Coldwell Banker güvencesiyle"), "Coldwell Banker güvencesiyle"],
   [okunusaCevir("3,5+1 daire, AVM'ye 2 km"), "üç buçuk artı bir daire, aveem'ye iki kilometre"],
 ];
 let ok = 0;
