@@ -23,3 +23,6 @@ library/audio/music
 # Başka kanalların kareleri telifli olabilir — yalnızca sende kalsın
 marka/style-refs/*
 !marka/style-refs/README.md
+
+# Müzik dosyaları (telif) git'e girmez
+public/marka/*.mp3

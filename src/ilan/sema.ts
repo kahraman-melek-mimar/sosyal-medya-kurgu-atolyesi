@@ -111,8 +111,27 @@ export const ilanPlanSchema = z.object({
       bilgi: alanSchema.optional(),
       odaEtiketi: alanSchema.optional(),
       altyazi: alanSchema.optional(),
+      /** CB logosu bu alanın tam ortasına konur (ör. "4"); yoksa üst bantta etiketin sağında. */
+      logo: alanSchema.optional(),
     })
     .default({}),
+  /** SATILIK / KİRALIK etiketinin boyut çarpanı (1 = klasik 30 px yazı). */
+  ustEtiketOlcek: z.number().min(0.5).max(3).default(1),
+  /** Üst kenardaki koyu degrade bant (okunabilirlik). false = üstte bant yok. */
+  ustKarartma: z.boolean().default(true),
+  /**
+   * Video boyunca dönen imza + telefon: ad imza gibi yazılır, altında telefon daktilo gibi belirir, birkaç kez hızlıca
+   * yanıp söner ve kaybolur; `bekleme` sn sonra yeniden başlar. `alan` ızgara alanı (dikey ortası), metin sağa yaslı.
+   */
+  imzaDongu: z
+    .object({
+      alan: alanSchema.default("20"),
+      ad: z.string().optional(), // boşsa danisman.ad
+      telefon: z.string().optional(), // boşsa danisman.telefon
+      bekleme: z.number().min(0).default(5),
+      baslangic: z.number().min(0).default(0.3),
+    })
+    .optional(),
   /** Önizleme için numaralı ızgarayı videonun üstüne çizer. Teslim render'ında false olmalı. */
   izgaraGoster: z.boolean().default(false),
   /** Bilgi çubuğunun aralığı; sütunlar `aralik` saniye arayla tek tek girer. */

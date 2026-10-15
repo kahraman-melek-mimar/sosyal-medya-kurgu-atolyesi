@@ -294,17 +294,75 @@ const LogoRozet: React.FC<{ src: string; yukseklik: number }> = ({ src, yuksekli
 
 const UstBant: React.FC<{ plan: IlanPlan; t: number; bitis: number }> = ({ plan, t, bitis }) => {
   const o = pencere(t, 0.1, bitis, 0.5, 0.3);
+  const k = plan.ustEtiketOlcek;
+  const logoAyri = !!plan.yerlesim.logo;
+  const logoKutu = logoAyri ? alan(plan.yerlesim.logo!) : null;
   return (
-    <Yer tanim={plan.yerlesim.ustBant} varsayilan={{ left: G.yan, top: G.ust, width: G.W - 2 * G.yan, height: 170 }} hiza="ust">
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", opacity: o }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 8 }}>
-        <div style={{ background: renk.cbMavi, color: renk.beyaz, fontFamily: yazi.sans, fontWeight: 700, fontSize: 30, letterSpacing: 4, padding: "12px 24px", borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.3)" }}>
-          {tr(plan.ustEtiket ?? plan.ilan.tur)}
+    <>
+      <Yer tanim={plan.yerlesim.ustBant} varsayilan={{ left: G.yan, top: G.ust, width: G.W - 2 * G.yan, height: 170 }} hiza="ust">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", opacity: o }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 8 }}>
+            <div
+              style={{
+                background: renk.cbMavi, color: renk.beyaz, fontFamily: yazi.sans, fontWeight: 700, fontSize: 30 * k, letterSpacing: 4 * k,
+                padding: `${12 * k}px ${24 * k}px`, borderRadius: 12 * k, boxShadow: "0 8px 24px rgba(0,0,0,0.3)", whiteSpace: "nowrap",
+              }}
+            >
+              {tr(plan.ustEtiket ?? plan.ilan.tur)}
+            </div>
+          </div>
+          {logoAyri ? null : <LogoRozet src={plan.danisman.logo} yukseklik={128} />}
         </div>
+      </Yer>
+      {logoKutu ? (
+        // Logo alanın tam ortasında; rozet genişliği alanı aşmayacak şekilde ölçeklenir (logo oranı ≈ 1.61).
+        <div style={{ position: "absolute", left: logoKutu.left, top: logoKutu.top, width: logoKutu.width, height: logoKutu.height, display: "flex", alignItems: "center", justifyContent: "center", opacity: o }}>
+          <LogoRozet src={plan.danisman.logo} yukseklik={Math.min(150, (logoKutu.width - 30) / 1.97)} />
+        </div>
+      ) : null}
+    </>
+  );
+};
+
+/**
+ * İmza döngüsü (plan.imzaDongu): ad imza gibi soldan sağa yazılır, telefon daktilo gibi harf harf gelir, kısa bir
+ * bekleyişten sonra ikisi birlikte birkaç kez hızlıca yanıp söner ve kaybolur; `bekleme` sn sonra baştan başlar.
+ */
+const IMZA_SN = { imza: 1.4, daktiloHarf: 0.08, tut: 1.2, yanip: 0.6, sonus: 0.5 } as const;
+const ImzaDongu: React.FC<{ plan: IlanPlan; t: number }> = ({ plan, t }) => {
+  const d = plan.imzaDongu;
+  if (!d) return null;
+  const ad = d.ad ?? plan.danisman.ad;
+  const tel = d.telefon ?? plan.danisman.telefon;
+  const daktilo = tel.length * IMZA_SN.daktiloHarf;
+  const gorunur = IMZA_SN.imza + daktilo + IMZA_SN.tut + IMZA_SN.yanip + IMZA_SN.sonus;
+  const dongu = gorunur + d.bekleme;
+  if (t < d.baslangic) return null;
+  const u = (t - d.baslangic) % dongu;
+  if (u >= gorunur) return null;
+  const imzaP = interpolate(u, [0, IMZA_SN.imza], [0, 1], { ...clamp, easing: Easing.bezier(0.45, 0, 0.25, 1) });
+  const harf = Math.floor(Math.max(0, u - IMZA_SN.imza * 0.85) / IMZA_SN.daktiloHarf);
+  const yazilan = tel.slice(0, Math.min(tel.length, harf));
+  const daktiloBitti = harf >= tel.length;
+  const yanipBas = IMZA_SN.imza + daktilo + IMZA_SN.tut;
+  // Hızlı yanıp sönme: 0.1 sn açık / 0.1 sn kapalı (3 kez), ardından söner.
+  let o = 1;
+  if (u >= yanipBas && u < yanipBas + IMZA_SN.yanip) o = Math.floor((u - yanipBas) / 0.1) % 2 === 0 ? 0.08 : 1;
+  if (u >= yanipBas + IMZA_SN.yanip) o = interpolate(u, [yanipBas + IMZA_SN.yanip, gorunur], [1, 0], clamp);
+  // Daktilo imleci: yazarken sabit, bitince yarım saniyede bir yanıp söner.
+  const imlec = !daktiloBitti ? 1 : Math.floor(u / 0.5) % 2 === 0 ? 1 : 0;
+  const k = alan(d.alan);
+  const golge = "0 3px 14px rgba(0,0,0,0.75), 0 0 2px rgba(0,0,0,0.6)";
+  return (
+    <div style={{ position: "absolute", right: G.W - (k.left + k.width) + 34, top: k.top + k.height / 2, transform: "translateY(-50%)", textAlign: "right", opacity: o, color: renk.beyaz }}>
+      <div style={{ fontFamily: yazi.imza, fontSize: 84, lineHeight: 1.05, whiteSpace: "nowrap", textShadow: golge, padding: "0 6px", clipPath: `inset(-30% ${(1 - imzaP) * 100}% -30% -5%)` }}>
+        {ad.toLocaleLowerCase("tr-TR").replace(/(^|\s)(\p{L})/gu, (_, b: string, h: string) => b + h.toLocaleUpperCase("tr-TR"))}
       </div>
-      <LogoRozet src={plan.danisman.logo} yukseklik={128} />
+      <div style={{ fontFamily: yazi.sans, fontWeight: 600, fontSize: 40, letterSpacing: 2, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", textShadow: golge, marginTop: 2, minHeight: 52 }}>
+        {yazilan}
+        {harf > 0 ? <span style={{ opacity: imlec, fontWeight: 400 }}>|</span> : null}
+      </div>
     </div>
-    </Yer>
   );
 };
 
@@ -383,7 +441,7 @@ const OdaEtiketi: React.FC<{ metin: string; frames: number; tanim?: string }> = 
     <Yer tanim={tanim} varsayilan={{ left: G.yan, top: 1000, width: 775, height: 80 }} hiza="ust" butonKorumasi>
     <div style={{ opacity: o, transform: `translateX(${(1 - o) * -24}px)`, display: "flex", alignItems: "center", gap: 14 }}>
       <div style={{ width: 8, height: 46, background: renk.beyaz, borderRadius: 4, flexShrink: 0 }} />
-      <div style={{ background: renk.cbMavi, color: renk.beyaz, fontFamily: yazi.sans, fontWeight: 600, fontSize: 30, letterSpacing: 3.5, padding: "10px 20px", borderRadius: 10 }}>{tr(metin)}</div>
+      <div style={{ background: renk.cbMavi, color: renk.beyaz, fontFamily: yazi.sans, fontWeight: 600, fontSize: 30, letterSpacing: 3.5, padding: "10px 20px", borderRadius: 10, whiteSpace: "nowrap" }}>{tr(metin)}</div>
     </div>
     </Yer>
   );
@@ -568,11 +626,12 @@ export const IlanReel: React.FC<IlanPlan> = (plan) => {
   return (
     <AbsoluteFill style={{ backgroundColor: renk.cbMaviKoyu }}>
       <SahneKatmani plan={plan} />
-      {/* Okunabilirlik: üstte lacivert, altta koyu degrade (mülkü örtmeden). */}
+      {/* Okunabilirlik: üstte lacivert (ustKarartma), altta koyu degrade (mülkü örtmeden). */}
       <AbsoluteFill
         style={{
-          background:
-            "linear-gradient(180deg, rgba(0,15,51,0.72) 0%, rgba(0,15,51,0.35) 30%, rgba(0,15,51,0) 45%, rgba(0,0,0,0) 55%, rgba(0,10,30,0.55) 78%, rgba(0,10,30,0.7) 100%)",
+          background: plan.ustKarartma
+            ? "linear-gradient(180deg, rgba(0,15,51,0.72) 0%, rgba(0,15,51,0.35) 30%, rgba(0,15,51,0) 45%, rgba(0,0,0,0) 55%, rgba(0,10,30,0.55) 78%, rgba(0,10,30,0.7) 100%)"
+            : "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 55%, rgba(0,10,30,0.55) 78%, rgba(0,10,30,0.7) 100%)",
         }}
       />
       <GecisOrtusu plan={plan} />
@@ -592,6 +651,7 @@ export const IlanReel: React.FC<IlanPlan> = (plan) => {
       <Sequence from={Math.round(icerikSonu * fps)} durationInFrames={Math.round(plan.kapanis.sure * fps)}>
         <Kapanis plan={plan} />
       </Sequence>
+      <ImzaDongu plan={plan} t={t} />
       {plan.izgaraGoster ? <IzgaraKatmani /> : null}
       <Muzik plan={plan} />
       {plan.sesler.map((x, i) => (

@@ -133,3 +133,10 @@ isteğe bağlı hiza soneki `üst` / `orta` / `alt`. Kod: `src/ilan/izgara.ts`.
 - `kartlar[].alan`, `sahneler[].alan` (görüntüyü alana sığdırır: bölünmüş ekran / PiP), `sahneler[].etiketAlan`
 - `izgaraGoster: true` → numaralı ızgara + güvenli alan dışı kırmızı tarama (yalnız önizleme; teslimde false)
 - Altyazı ve oda etiketi, alan buton sütununa (x > 850, y > 960) uzanırsa x 840'ta kesilir.
+- `yerlesim.logo`: CB logosu alanın tam ortasında (ör. `"4"`); `ustEtiketOlcek`: SATILIK/KİRALIK boyutu (1.5 = %50 büyük)
+- `ustKarartma: false`: üst kenardaki koyu degrade bant kaldırılır (alt degrade kalır)
+- `imzaDongu` `{ alan: "20", ad, telefon, bekleme: 5 }`: video boyunca, alanın dikey ortasında sağa yaslı; ad imza gibi
+  yazılır, telefon daktilo gibi gelir, birkaç kez hızlı yanıp söner, söner; `bekleme` sn sonra tekrar.
+
+Kullanıcının tercih ettiği yerleşim (Safepark 4+1, Ekim 2026): altyazı `"13-15 alt"` (17'nin üstüne yaslı),
+oda etiketi `"13 orta"`, logo `"4"`, `ustEtiketOlcek: 1.5`, `ustKarartma: false`, `imzaDongu` hücre 20.
