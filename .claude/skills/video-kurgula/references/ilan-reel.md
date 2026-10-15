@@ -14,7 +14,7 @@ WhatsApp Durum. Eski 16:9 hattından (src/index.ts, work/edit-plan.json, scripts
 | `src/ilan/sema.ts` | Plan şeması (zod) — alan açıklamaları burada |
 | `src/ilan/tema.ts` | CB renkleri (#012169), yerel fontlar, güvenli alan sabitleri |
 | `public/fonts/` | Poppins + Cormorant Garamond (SIL OFL), internetsiz render |
-| `public/marka/` | `cb-logo-cerceveli.png`, `portre.png` |
+| `public/marka/` | `cb-parla-logo.png` (tek geçerli logo: CB Parla Gayrimenkul), `portre-kare.png` (yüz ortalı), isteğe bağlı `muzik.mp3` (varsayılan müzik) |
 | `library/examples/ilan-plan.example.json` | Örnek plan (medyasız → lacivert yer tutucular) |
 | `work/ilan-plan.json` | Bu videonun planı (git'e girmez) |
 | `work/metin.md` | Seslendirme metni (git'e girmez) |
@@ -84,3 +84,13 @@ servislere ağ erişimine sahip değildir; betikler yalnız kullanıcının maki
 - **Doğrulama (Ekim 2026):** iki betik, resmi dokümanlardaki yanıt biçimlerini taklit eden yerel sahte sunucuyla uçtan
   uca test edildi (`ELEVENLABS_BASE_URL` / `HEYGEN_BASE_URL` ile yönlendirilebilir). Video ortasındaki avatar sahnesi
   doğru kareden oynadı (senkron kontrolü). Gerçek API ile ilk çalıştırmada yanıt alanlarını yine kontrol et.
+
+## Yerleşim ızgarası (Ekim 2026, kullanıcı isteği)
+
+Ekran 4 sütun × 5 satır (hücre 270×384); sol üst **1**, sağ alt **20**, satır satır numaralı. Kullanıcı yerleşimi
+bu numaralarla ister ("başlık 5-8'e", "altyazı 13-15 alt"). Alan = tek hücre (`"6"`) ya da iki köşe (`"6-11"`),
+isteğe bağlı hiza soneki `üst` / `orta` / `alt`. Kod: `src/ilan/izgara.ts`.
+- `yerlesim`: `ustBant`, `baslik`, `bilgi`, `odaEtiketi`, `altyazi` (verilmeyen öğe klasik konumunda kalır)
+- `kartlar[].alan`, `sahneler[].alan` (görüntüyü alana sığdırır: bölünmüş ekran / PiP), `sahneler[].etiketAlan`
+- `izgaraGoster: true` → numaralı ızgara + güvenli alan dışı kırmızı tarama (yalnız önizleme; teslimde false)
+- Altyazı ve oda etiketi, alan buton sütununa (x > 850, y > 960) uzanırsa x 840'ta kesilir.

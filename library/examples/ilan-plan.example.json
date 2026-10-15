@@ -8,34 +8,108 @@
     "konum2": "Bahçelievler Sitesi"
   },
   "ozellikler": [
-    { "deger": "309 m²", "etiket": "Brüt" },
-    { "deger": "262 m²", "etiket": "Net" },
-    { "deger": "6+2", "etiket": "Oda" },
-    { "deger": "4", "etiket": "Banyo" }
+    {
+      "deger": "309 m²",
+      "etiket": "Brüt"
+    },
+    {
+      "deger": "262 m²",
+      "etiket": "Net"
+    },
+    {
+      "deger": "6+2",
+      "etiket": "Oda"
+    },
+    {
+      "deger": "4",
+      "etiket": "Banyo"
+    }
   ],
   "sahneler": [
-    { "tip": "konusma", "src": "", "sure": 3.5, "baslangic": 0, "hareket": "yakinlas" },
-    { "tip": "mulk-video", "src": "", "sure": 3, "hareket": "yakinlas", "etiket": "Dış Cephe" },
-    { "tip": "mulk-foto", "src": "", "sure": 2.5, "hareket": "sola", "etiket": "Salon" },
-    { "tip": "mulk-foto", "src": "", "sure": 2.5, "hareket": "uzaklas", "etiket": "Mutfak" },
-    { "tip": "konusma", "src": "", "sure": 3, "baslangic": 4 },
-    { "tip": "mulk-foto", "src": "", "sure": 2.5, "hareket": "yakinlas", "etiket": "Ana Yatak Odası" }
+    {
+      "tip": "konusma",
+      "src": "",
+      "sure": 3.5,
+      "baslangic": 0,
+      "hareket": "yakinlas"
+    },
+    {
+      "tip": "mulk-video",
+      "src": "",
+      "sure": 3,
+      "hareket": "yakinlas",
+      "etiket": "Dış Cephe"
+    },
+    {
+      "tip": "mulk-foto",
+      "src": "",
+      "sure": 2.5,
+      "hareket": "sola",
+      "etiket": "Salon"
+    },
+    {
+      "tip": "mulk-foto",
+      "src": "",
+      "sure": 2.5,
+      "hareket": "uzaklas",
+      "etiket": "Mutfak"
+    },
+    {
+      "tip": "konusma",
+      "src": "",
+      "sure": 3,
+      "baslangic": 4
+    },
+    {
+      "tip": "mulk-foto",
+      "src": "",
+      "sure": 2.5,
+      "hareket": "yakinlas",
+      "etiket": "Ana Yatak Odası"
+    }
   ],
-  "baslik": { "from": 0.3, "to": 6.4 },
-  "bilgi": { "from": 6.7, "to": 11.4, "aralik": 0.25 },
+  "baslik": {
+    "from": 0.3,
+    "to": 6.4
+  },
+  "bilgi": {
+    "from": 6.7,
+    "to": 11.4,
+    "aralik": 0.25
+  },
   "altyazi": [
-    { "from": 0.4, "to": 1.8, "text": "Gölbaşı'nda site içinde" },
-    { "from": 1.8, "to": 3.4, "text": "6+2 müstakil villa satışta" },
-    { "from": 11.6, "to": 13.2, "text": "Krediye uygun, hemen teslim" },
-    { "from": 13.2, "to": 14.4, "text": "Detaylar için arayın" }
+    {
+      "from": 0.4,
+      "to": 1.8,
+      "text": "Gölbaşı'nda site içinde"
+    },
+    {
+      "from": 1.8,
+      "to": 3.4,
+      "text": "6+2 müstakil villa satışta"
+    },
+    {
+      "from": 11.6,
+      "to": 13.2,
+      "text": "Krediye uygun, hemen teslim"
+    },
+    {
+      "from": 13.2,
+      "to": 14.4,
+      "text": "Detaylar için arayın"
+    }
   ],
-  "kapanis": { "sure": 4, "slogan": "Doğru yatırım, doğru danışmanla mümkün." },
+  "kapanis": {
+    "sure": 4,
+    "slogan": "Doğru yatırım, doğru danışmanla mümkün."
+  },
   "danisman": {
-    "ad": "Kahraman Melek",
-    "unvan": "Gayrimenkul Danışmanı",
+    "ad": "Kahraman MELEK",
+    "unvan": "Ticari Gayrimenkul Danışmanı",
     "telefon": "0542 361 77 91",
     "ofis": "Parla Gayrimenkul",
-    "portre": "marka/portre.png",
-    "logo": "marka/cb-logo-cerceveli.png"
+    "portre": "marka/portre-kare.png",
+    "logo": "marka/cb-parla-logo.png",
+    "imza": true
   }
 }

@@ -39,7 +39,11 @@ When the two conflict, **Ev kuralları win**.
      - YYYY-MM-DD · <the rule, imperative> — "<the user's own words>"
      Keep the list short and concrete. Remove a rule only when the user reverses it. -->
 
-_(henüz kural yok — ilk videonun revizyonlarından sonra dolmaya başlar)_
+- 2026-10-13 · İlan metninde danışman tekil birinci şahıs konuşur: "bizimle iletişime geçin" değil "benimle iletişime geçin" (metin.md'de yazılı olsa bile seslendirmeden önce düzelt) — "bizimle iletişime geçin diye yazsa bile scriptte onu benimle iletişime geçin olarak düzeltiriz"
+- 2026-10-13 · Danışman adı her yerde "Kahraman MELEK" (soyadı büyük), unvan "Ticari Gayrimenkul Danışmanı" — "Kahraman MELEK olsun (surname all caps) … Ticari Gayrimenkul Danışmanı olarak düzeltelim bundan sonrası için de"
+- 2026-10-13 · Logo yalnızca Coldwell Banker **Parla Gayrimenkul** logosu (`public/marka/cb-parla-logo.png`); "Türkiye·Kıbrıs" logosu kullanılmaz — "logo Coldwell Banker Parla olan logo olacak … bir daha bu şekilde kullanılmasın"
+- 2026-10-13 · Kapanışta ad imza gibi el yazısıyla yazılır (`danisman.imza: true`) — "Sonunda ismimi yazarken de sanki imza atıyormuş gibi yazalım"
+- 2026-10-13 · CB lacivert renk düzeni korunur — "renkler çok güzel"
 
 ## Event catalogue (type → use)
 

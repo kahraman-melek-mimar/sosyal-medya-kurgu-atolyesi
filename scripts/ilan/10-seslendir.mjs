@@ -91,6 +91,11 @@ const ilanPlan = existsSync(planYolu)
   : JSON.parse(readFileSync(p("library/examples/ilan-plan.example.json"), "utf8"));
 ilanPlan.seslendirme = { src: "assets/seslendirme.mp3", from: ofset, ses: 1 };
 ilanPlan.altyazi = altyazi;
+// Varsayılan müzik: public/marka/muzik.(mp3|m4a|wav) varsa ve planda müzik yoksa eklenir (seslendirmede otomatik kısılır).
+if (!ilanPlan.muzik) {
+  const muzik = ["mp3", "m4a", "wav"].map((x) => `marka/muzik.${x}`).find((x) => existsSync(p("public", x)));
+  if (muzik) ilanPlan.muzik = { src: muzik, ses: 0.22, konusmadaSes: 0.08 };
+}
 writeFileSync(planYolu, JSON.stringify(ilanPlan, null, 2));
 
 const sahneToplam = ilanPlan.sahneler.reduce((s, x) => s + x.sure, 0);

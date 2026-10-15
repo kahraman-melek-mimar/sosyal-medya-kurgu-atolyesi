@@ -35,10 +35,13 @@ const yukle = (aile: string, dosyaKoku: string, agirliklar: number[], stil: "nor
 
 yukle("CB Poppins", "poppins", [500, 600, 700, 800], "normal");
 yukle("CB Garamond", "cormorant-garamond", [500, 600], "italic");
+// İmza (kapanışta danışman adı el yazısıyla "atılır").
+yukle("CB Imza", "mrs-saint-delafield", [400], "normal");
 
 export const yazi = {
   sans: `"CB Poppins", Poppins, sans-serif`,
   serif: `"CB Garamond", "Cormorant Garamond", Georgia, serif`,
+  imza: `"CB Imza", "Mrs Saint Delafield", cursive`,
 };
 
 export const renk = {

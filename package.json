@@ -33,6 +33,7 @@
     "world-atlas": "^2.0.2"
   },
   "scripts": {
+    "proje": "node scripts/proje.mjs",
     "dev": "remotion studio",
     "build": "remotion bundle",
     "upgrade": "remotion upgrade",
@@ -54,12 +55,14 @@
     "master": "npm run render:gfx && npm run composite && npm run qc && npm run audio && npm run qc:mix",
     "shorts": "node scripts/90-shorts.mjs",
     "ilan:still": "remotion still src/ilan/giris.ts IlanReel out/ilan-onizleme.png --props=work/ilan-plan.json",
-    "ilan:render": "remotion render src/ilan/giris.ts IlanReel out/final-dikey.mp4 --props=work/ilan-plan.json --codec=h264 --crf=18 --pixel-format=yuv420p --color-space=bt709 --audio-codec=aac",
+    "ilan:render": "remotion render src/ilan/giris.ts IlanReel out/.ham-dikey.mp4 --props=work/ilan-plan.json --codec=h264 --crf=18 --pixel-format=yuv420p --color-space=bt709 --audio-codec=aac && node scripts/ilan/30-ses-seviyesi.mjs out/.ham-dikey.mp4 out/final-dikey.mp4 --ham-sil",
+    "ilan:ses-seviyesi": "node scripts/ilan/30-ses-seviyesi.mjs",
     "ilan:studio": "remotion studio src/ilan/giris.ts --props=work/ilan-plan.json",
     "ilan:seslendir": "node --env-file-if-exists=.env scripts/ilan/10-seslendir.mjs",
     "ilan:avatar": "node --env-file-if-exists=.env scripts/ilan/20-avatar.mjs",
     "ilan:sozluk": "node scripts/ilan/sozluk-pls.mjs",
-    "ilan:test": "node scripts/ilan/okunus-test.mjs"
+    "ilan:test": "node scripts/ilan/okunus-test.mjs",
+    "ilan:hazirla": "node scripts/ilan/05-hazirla.mjs"
   },
   "sideEffects": [
     "*.css"

@@ -4,15 +4,14 @@ dist
 .env
 
 # Videolar ve ara dosyalar git'e girmez (büyük + kişisel)
+# Her video projects/<slug>/ altında; kökteki work, out, public/assets etkin projeye kısayoldur
 out
 projects
+work
+public/assets
 public/main.mov
-public/assets/*
-!public/assets/.gitkeep
 public/proxy
 public/derived
-work/*
-!work/edit-plan.json
 library/audio/music
 
 # Üçüncü parti referans repoları (isteğe bağlı, README'ye bakın)

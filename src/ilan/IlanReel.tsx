@@ -7,10 +7,51 @@ import { AbsoluteFill, Easing, Img, interpolate, Sequence, staticFile, useCurren
 import { Audio, Video } from "@remotion/media";
 import { IlanPlan, Sahne, toplamSure } from "./sema";
 import { guvenli as G, renk, yazi } from "./tema";
+import { alan, Hiza, hizaOku, hizaStil, IZGARA, Kutu, kutuSec } from "./izgara";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 const yumusak = Easing.bezier(0.16, 1, 0.3, 1);
 const tr = (s: string) => s.toLocaleUpperCase("tr-TR");
+
+// ───────────────────────── ızgara yerleşimi ─────────────────────────
+
+/**
+ * Öğeyi ızgara alanına (plan.yerlesim / kartlar[].alan) ya da klasik konumuna koyar. `butonKorumasi`: alan sağ alttaki
+ * beğen/yorum sütununa (x > 850, y > 960) uzanıyorsa genişlik x 840'ta kesilir (altyazı, oda etiketi).
+ */
+const Yer: React.FC<{ tanim?: string; varsayilan: Kutu; hiza: Hiza; butonKorumasi?: boolean; children: React.ReactNode }> = ({
+  tanim,
+  varsayilan,
+  hiza,
+  butonKorumasi,
+  children,
+}) => {
+  const k = kutuSec(tanim, varsayilan);
+  const genislik = butonKorumasi && k.top + k.height > G.sagButonY ? Math.min(k.width, G.sagButonX - 10 - k.left) : k.width;
+  return (
+    <div style={{ position: "absolute", left: k.left, top: k.top, width: genislik, height: k.height, ...hizaStil(hizaOku(tanim, hiza)) }}>
+      {children}
+    </div>
+  );
+};
+
+/** Önizleme ızgarası: 4×5 hücre, numaralar, platform arayüzünün örttüğü bölgeler kırmızı tarama. */
+const IzgaraKatmani: React.FC = () => (
+  <AbsoluteFill style={{ pointerEvents: "none" }}>
+    {/* güvenli alan dışı: üst 0–280, alt y > 1250, sağ alt buton sütunu */}
+    <div style={{ position: "absolute", left: 0, top: 0, width: 1080, height: 280, background: "rgba(255,40,40,0.16)" }} />
+    <div style={{ position: "absolute", left: 0, top: 1250, width: 1080, height: 670, background: "rgba(255,40,40,0.16)" }} />
+    <div style={{ position: "absolute", left: 850, top: 960, width: 230, height: 290, background: "rgba(255,40,40,0.16)" }} />
+    {Array.from({ length: IZGARA.sutun * IZGARA.satir }, (_, i) => {
+      const k = alan(String(i + 1));
+      return (
+        <div key={i} style={{ position: "absolute", left: k.left, top: k.top, width: k.width, height: k.height, boxSizing: "border-box", border: "2px solid rgba(255,230,0,0.75)" }}>
+          <div style={{ position: "absolute", left: 10, top: 6, fontFamily: yazi.sans, fontWeight: 800, fontSize: 44, color: "#FFE600", textShadow: "0 0 8px rgba(0,0,0,0.9)" }}>{i + 1}</div>
+        </div>
+      );
+    })}
+  </AbsoluteFill>
+);
 
 /** 0→1 giriş, 1→0 çıkış; saniye cinsinden pencere. */
 const pencere = (t: number, from: number, to: number, giris = 0.45, cikis = 0.35) =>
@@ -54,13 +95,67 @@ const SahneGorsel: React.FC<{ s: Sahne; frames: number; senkronBas: number }> = 
       </AbsoluteFill>
     );
   }
+  if (s.tip === "karsilastirma") return <Karsilastirma s={s} frames={frames} stil={stil} />;
   if (foto) return <Img src={staticFile(s.src)} style={stil} />;
   // Seslendirmeyle senkron avatar sesi kapalıdır (ses seslendirme kanalından gelir).
   const sesAcik = s.senkron ? false : (s.ses ?? s.tip === "konusma");
   const bas = s.senkron ? Math.max(0, senkronBas) : s.baslangic;
   return (
     <AbsoluteFill style={{ overflow: "hidden" }}>
-      <Video src={staticFile(s.src)} trimBefore={Math.round(bas * fps)} muted={!sesAcik} objectFit="cover" style={stil} />
+      <Video src={staticFile(s.src)} trimBefore={Math.round(bas * fps)} playbackRate={s.senkron ? 1 : s.hiz} muted={!sesAcik} objectFit="cover" style={stil} />
+    </AbsoluteFill>
+  );
+};
+
+const videoMu = (src: string) => /\.(mp4|mov|m4v|webm)$/i.test(src);
+
+/** Karşılaştırma katmanı: foto ya da sessiz video, sahnenin kamera hareketiyle. */
+const Katman: React.FC<{ src: string; stil: React.CSSProperties; hiz: number }> = ({ src, stil, hiz }) =>
+  videoMu(src) ? (
+    <Video src={staticFile(src)} playbackRate={hiz} muted objectFit="cover" style={stil} />
+  ) : (
+    <Img src={staticFile(src)} style={stil} />
+  );
+
+/** Öncesi / sonrası: SONRASI sağdan sola kayan beyaz bir perdeyle ÖNCESİ'nin üstüne açılır. */
+const Karsilastirma: React.FC<{ s: Sahne; frames: number; stil: React.CSSProperties }> = ({ s, frames, stil }) => {
+  const frame = useCurrentFrame();
+  const p = frames > 1 ? frame / (frames - 1) : 0;
+  // Perdenin x konumu (0–1): 1 = tamamen öncesi, 0 = tamamen sonrası.
+  const x = interpolate(p, s.perde, [1, 0], { ...clamp, easing: Easing.bezier(0.65, 0, 0.35, 1) });
+  const px = x * 1080;
+  const tutamacO = interpolate(x, [0, 0.03, 0.97, 1], [0, 1, 1, 0], clamp);
+  const etiket = (metin: string, o: number, sag: boolean) => (
+    <div
+      style={{
+        position: "absolute", top: 780, [sag ? "right" : "left"]: G.yan, opacity: o,
+        background: sag ? renk.beyaz : renk.cbMavi, color: sag ? renk.cbMavi : renk.beyaz,
+        fontFamily: yazi.sans, fontWeight: 700, fontSize: 30, letterSpacing: 5, padding: "12px 26px", borderRadius: 10,
+        boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+      }}
+    >
+      {tr(metin)}
+    </div>
+  );
+  return (
+    <AbsoluteFill style={{ overflow: "hidden" }}>
+      {s.src ? <Katman src={s.src} stil={stil} hiz={s.hiz} /> : null}
+      <AbsoluteFill style={{ clipPath: `inset(0 0 0 ${px}px)` }}>
+        {s.src2 ? <Katman src={s.src2} stil={stil} hiz={s.hiz} /> : null}
+      </AbsoluteFill>
+      {/* perde çizgisi + tutamaç */}
+      <div style={{ position: "absolute", top: 0, bottom: 0, left: px - 3, width: 6, background: renk.beyaz, opacity: tutamacO, boxShadow: "0 0 18px rgba(0,0,0,0.35)" }} />
+      <div
+        style={{
+          position: "absolute", top: 960 - 42, left: px - 42, width: 84, height: 84, borderRadius: 42, background: renk.beyaz,
+          opacity: tutamacO, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+          color: renk.cbMavi, fontSize: 30, fontWeight: 800, fontFamily: yazi.sans, boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
+        }}
+      >
+        ‹ ›
+      </div>
+      {etiket(s.oncesiYazi, interpolate(x, [0.15, 0.4], [0, 1], clamp), false)}
+      {etiket(s.sonrasiYazi, interpolate(x, [0.6, 0.85], [1, 0], clamp), true)}
     </AbsoluteFill>
   );
 };
@@ -80,13 +175,22 @@ const SahneKatmani: React.FC<{ plan: IlanPlan }> = ({ plan }) => {
         return (
           <Sequence key={i} from={from} durationInFrames={frames} premountFor={fps}>
             <GirisOpak ilk={i === 0}>
-              <SahneGorsel s={s} frames={frames} senkronBas={senkronBas} />
+              <SahneAlani tanim={s.alan}>
+                <SahneGorsel s={s} frames={frames} senkronBas={senkronBas} />
+              </SahneAlani>
             </GirisOpak>
           </Sequence>
         );
       })}
     </>
   );
+};
+
+/** Sahne görüntüsünü ızgara alanına sığdırır (alan yoksa tam ekran). */
+const SahneAlani: React.FC<{ tanim?: string; children: React.ReactNode }> = ({ tanim, children }) => {
+  if (!tanim) return <>{children}</>;
+  const k = alan(tanim);
+  return <div style={{ position: "absolute", left: k.left, top: k.top, width: k.width, height: k.height, overflow: "hidden" }}>{children}</div>;
 };
 
 const GirisOpak: React.FC<{ ilk: boolean; children: React.ReactNode }> = ({ ilk, children }) => {
@@ -107,41 +211,56 @@ const LogoRozet: React.FC<{ src: string; yukseklik: number }> = ({ src, yuksekli
 const UstBant: React.FC<{ plan: IlanPlan; t: number; bitis: number }> = ({ plan, t, bitis }) => {
   const o = pencere(t, 0.1, bitis, 0.5, 0.3);
   return (
-    <div style={{ position: "absolute", top: G.ust, left: G.yan, right: G.yan, display: "flex", justifyContent: "space-between", alignItems: "flex-start", opacity: o }}>
+    <Yer tanim={plan.yerlesim.ustBant} varsayilan={{ left: G.yan, top: G.ust, width: G.W - 2 * G.yan, height: 170 }} hiza="ust">
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", opacity: o }}>
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 8 }}>
         <div style={{ background: renk.cbMavi, color: renk.beyaz, fontFamily: yazi.sans, fontWeight: 700, fontSize: 30, letterSpacing: 4, padding: "12px 24px", borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.3)" }}>
-          {tr(plan.ilan.tur)}
+          {tr(plan.ustEtiket ?? plan.ilan.tur)}
         </div>
       </div>
-      <LogoRozet src={plan.danisman.logo} yukseklik={118} />
+      <LogoRozet src={plan.danisman.logo} yukseklik={128} />
     </div>
+    </Yer>
   );
 };
 
 // ───────────────────────── başlık kartı ─────────────────────────
 
-const BaslikKarti: React.FC<{ plan: IlanPlan; t: number }> = ({ plan, t }) => {
-  const { from, to } = plan.baslik;
+type KartMetni = { from: number; to: number; buyuk: string; vurgu?: string; serif?: string; kucuk?: string; fiyat?: string; alan?: string };
+
+const BaslikKarti: React.FC<{ k: KartMetni; t: number; varsayilanAlan?: string }> = ({ k, t, varsayilanAlan }) => {
+  const { from, to } = k;
   const o = pencere(t, from, to, 0.55, 0.35);
   const y = interpolate(t, [from, from + 0.6], [40, 0], { ...clamp, easing: yumusak });
   const cizgi = interpolate(t, [from + 0.25, from + 0.9], [0, 1], { ...clamp, easing: yumusak });
   if (o <= 0) return null;
   return (
-    <div style={{ position: "absolute", top: 478, left: G.yan, right: G.yan, opacity: o, transform: `translateY(${y}px)`, color: renk.beyaz }}>
-      <div style={{ fontFamily: yazi.sans, fontWeight: 800, fontSize: 112, lineHeight: 1, letterSpacing: -2, textShadow: "0 8px 30px rgba(0,0,0,0.45)" }}>
-        {tr(plan.ilan.emlakTipi)} <span style={{ fontWeight: 600 }}>{plan.ilan.oda}</span>
+    <Yer tanim={k.alan ?? varsayilanAlan} varsayilan={{ left: G.yan, top: 478, width: G.W - 2 * G.yan, height: 560 }} hiza="ust">
+    <div style={{ opacity: o, transform: `translateY(${y}px)`, color: renk.beyaz }}>
+      <div style={{ fontFamily: yazi.sans, fontWeight: 800, fontSize: 112, lineHeight: 1, letterSpacing: -2, whiteSpace: "pre-line", textShadow: "0 8px 30px rgba(0,0,0,0.45)" }}>
+        {tr(k.buyuk)}
+        {k.vurgu ? <span style={{ fontWeight: 600 }}> {k.vurgu}</span> : null}
       </div>
       <div style={{ height: 4, width: 220 * cizgi, background: renk.beyaz, margin: "22px 0 18px", borderRadius: 2 }} />
-      <div style={{ fontFamily: yazi.serif, fontStyle: "italic", fontWeight: 600, fontSize: 50, lineHeight: 1.1, textShadow: "0 4px 18px rgba(0,0,0,0.5)" }}>{plan.ilan.konum}</div>
-      {plan.ilan.konum2 ? (
-        <div style={{ fontFamily: yazi.sans, fontWeight: 500, fontSize: 30, letterSpacing: 3, marginTop: 10, color: renk.griAcik }}>{tr(plan.ilan.konum2)}</div>
+      {k.serif ? <div style={{ fontFamily: yazi.serif, fontStyle: "italic", fontWeight: 600, fontSize: 50, lineHeight: 1.1, textShadow: "0 4px 18px rgba(0,0,0,0.5)" }}>{k.serif}</div> : null}
+      {k.kucuk ? (
+        <div style={{ fontFamily: yazi.sans, fontWeight: 500, fontSize: 30, letterSpacing: 3, marginTop: 10, color: renk.griAcik }}>{tr(k.kucuk)}</div>
       ) : null}
-      {plan.ilan.fiyat ? (
-        <div style={{ display: "inline-block", marginTop: 22, background: renk.beyaz, color: renk.cbMavi, fontFamily: yazi.sans, fontWeight: 800, fontSize: 46, padding: "8px 22px", borderRadius: 12 }}>{plan.ilan.fiyat}</div>
+      {k.fiyat ? (
+        <div style={{ display: "inline-block", marginTop: 22, background: renk.beyaz, color: renk.cbMavi, fontFamily: yazi.sans, fontWeight: 800, fontSize: 46, padding: "8px 22px", borderRadius: 12 }}>{k.fiyat}</div>
       ) : null}
     </div>
+    </Yer>
   );
 };
+
+/** İlan başlığı (plan.baslik) + serbest kartlar (plan.kartlar). */
+const kartlariTopla = (plan: IlanPlan): KartMetni[] => [
+  ...(plan.baslik
+    ? [{ ...plan.baslik, buyuk: plan.ilan.emlakTipi, vurgu: plan.ilan.oda, serif: plan.ilan.konum, kucuk: plan.ilan.konum2, fiyat: plan.ilan.fiyat, alan: plan.yerlesim.baslik }]
+    : []),
+  ...plan.kartlar,
+];
 
 // ───────────────────────── bilgi çubuğu ─────────────────────────
 
@@ -152,7 +271,8 @@ const BilgiCubugu: React.FC<{ plan: IlanPlan; t: number }> = ({ plan, t }) => {
   const n = plan.ozellikler.length;
   const y = interpolate(t, [from, from + 0.5], [30, 0], { ...clamp, easing: yumusak });
   return (
-    <div style={{ position: "absolute", top: 500, left: G.yan, right: G.yan, opacity: o, transform: `translateY(${y}px)` }}>
+    <Yer tanim={plan.yerlesim.bilgi} varsayilan={{ left: G.yan, top: 500, width: G.W - 2 * G.yan, height: 220 }} hiza="ust">
+    <div style={{ opacity: o, transform: `translateY(${y}px)` }}>
       <div style={{ display: "flex", background: "rgba(255,255,255,0.96)", borderRadius: 24, padding: "26px 8px", boxShadow: "0 14px 40px rgba(0,0,0,0.3)" }}>
         {plan.ozellikler.map((oz, i) => {
           const g = interpolate(t, [from + 0.15 + i * aralik, from + 0.15 + i * aralik + 0.35], [0, 1], { ...clamp, easing: yumusak });
@@ -165,20 +285,23 @@ const BilgiCubugu: React.FC<{ plan: IlanPlan; t: number }> = ({ plan, t }) => {
         })}
       </div>
     </div>
+    </Yer>
   );
 };
 
 // ───────────────────────── oda etiketi + altyazı ─────────────────────────
 
-const OdaEtiketi: React.FC<{ metin: string; frames: number }> = ({ metin, frames }) => {
+const OdaEtiketi: React.FC<{ metin: string; frames: number; tanim?: string }> = ({ metin, frames, tanim }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const o = pencere(frame / fps, 0.2, frames / fps, 0.4, 0.3);
   return (
-    <div style={{ position: "absolute", left: G.yan, top: 1000, opacity: o, transform: `translateX(${(1 - o) * -24}px)`, display: "flex", alignItems: "center", gap: 14 }}>
-      <div style={{ width: 8, height: 46, background: renk.beyaz, borderRadius: 4 }} />
+    <Yer tanim={tanim} varsayilan={{ left: G.yan, top: 1000, width: 775, height: 80 }} hiza="ust" butonKorumasi>
+    <div style={{ opacity: o, transform: `translateX(${(1 - o) * -24}px)`, display: "flex", alignItems: "center", gap: 14 }}>
+      <div style={{ width: 8, height: 46, background: renk.beyaz, borderRadius: 4, flexShrink: 0 }} />
       <div style={{ background: renk.cbMavi, color: renk.beyaz, fontFamily: yazi.sans, fontWeight: 600, fontSize: 30, letterSpacing: 3.5, padding: "10px 20px", borderRadius: 10 }}>{tr(metin)}</div>
     </div>
+    </Yer>
   );
 };
 
@@ -187,8 +310,9 @@ const Altyazi: React.FC<{ plan: IlanPlan; t: number }> = ({ plan, t }) => {
   if (!cur) return null;
   const o = pencere(t, cur.from, cur.to, 0.12, 0.08);
   return (
-    // Sol hizalı, x 65–840: sağ alttaki buton sütununa (x > 850) taşmaz; alt sınır y 1240.
-    <div style={{ position: "absolute", left: G.yan, width: G.sagButonX - 10 - G.yan, bottom: G.H - 1240, opacity: o }}>
+    // Klasik: sol hizalı, x 65–840 (buton sütununa taşmaz), alt sınır y 1240. Izgara alanında alta yaslı.
+    <Yer tanim={plan.yerlesim.altyazi} varsayilan={{ left: G.yan, top: 840, width: G.sagButonX - 10 - G.yan, height: 400 }} hiza="alt" butonKorumasi>
+    <div style={{ opacity: o }}>
       <span
         style={{
           fontFamily: yazi.sans,
@@ -206,37 +330,91 @@ const Altyazi: React.FC<{ plan: IlanPlan; t: number }> = ({ plan, t }) => {
         {cur.text}
       </span>
     </div>
+    </Yer>
   );
 };
 
 // ───────────────────────── kapanış kartı ─────────────────────────
 
-const Kapanis: React.FC<{ plan: IlanPlan }> = ({ plan }) => {
+const Kapanis: React.FC<{ plan: IlanPlan }> = ({ plan }) =>
+  plan.kapanis.mod === "ofis" && plan.kapanis.ofis ? <OfisKapanis plan={plan} /> : <DanismanKapanis plan={plan} />;
+
+/** Ofis kartı: logo, ofis/ekip adı, adres, telefon (en büyük öğe), slogan. Tümü y < 1250. */
+const OfisKapanis: React.FC<{ plan: IlanPlan }> = ({ plan }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const t = frame / fps;
+  const g = (d: number) => interpolate(t, [d, d + 0.5], [0, 1], { ...clamp, easing: yumusak });
+  const o = plan.kapanis.ofis!;
+  const cizgi = interpolate(t, [0.5, 1.1], [0, 1], { ...clamp, easing: yumusak });
+  return (
+    <AbsoluteFill style={{ background: `radial-gradient(circle at 50% 38%, #0A2E80 0%, ${renk.cbMavi} 45%, ${renk.cbMaviKoyu} 100%)`, opacity: g(0) }}>
+      <div style={{ position: "absolute", top: G.ust + 40, left: 0, right: 0, display: "flex", justifyContent: "center", opacity: g(0.1), transform: `scale(${0.94 + 0.06 * g(0.1)})` }}>
+        <LogoRozet src={plan.danisman.logo} yukseklik={170} />
+      </div>
+      <div style={{ position: "absolute", top: 610, left: G.yan, right: G.yan, textAlign: "center", color: renk.beyaz, opacity: g(0.35), transform: `translateY(${(1 - g(0.35)) * 24}px)` }}>
+        <div style={{ fontFamily: yazi.sans, fontWeight: 800, fontSize: 84, lineHeight: 1.02, letterSpacing: -1 }}>{tr(o.baslik)}</div>
+        {o.altBaslik ? <div style={{ fontFamily: yazi.serif, fontStyle: "italic", fontWeight: 600, fontSize: 52, marginTop: 14, color: renk.griAcik }}>{o.altBaslik}</div> : null}
+        <div style={{ height: 4, width: 220 * cizgi, background: renk.beyaz, margin: "28px auto 0", borderRadius: 2 }} />
+      </div>
+      {o.adres ? (
+        <div style={{ position: "absolute", top: 900, left: G.yan, right: G.yan, textAlign: "center", opacity: g(0.6), fontFamily: yazi.sans, fontWeight: 600, fontSize: 34, letterSpacing: 5, color: renk.griAcik }}>
+          {tr(o.adres)}
+        </div>
+      ) : null}
+      <div style={{ position: "absolute", top: 990, left: G.yan, right: G.yan, textAlign: "center", opacity: g(0.75), transform: `translateY(${(1 - g(0.75)) * 20}px)` }}>
+        <div style={{ display: "inline-block", background: renk.beyaz, color: renk.cbMavi, fontFamily: yazi.sans, fontWeight: 800, fontSize: 58, letterSpacing: 1, padding: "12px 30px", borderRadius: 18, whiteSpace: "nowrap", boxShadow: "0 14px 40px rgba(0,0,0,0.35)" }}>
+          {o.telefon}
+        </div>
+      </div>
+      <div style={{ position: "absolute", top: 1150, left: 120, right: 120, textAlign: "center", fontFamily: yazi.serif, fontStyle: "italic", fontWeight: 500, fontSize: 40, color: renk.griAcik, opacity: g(1.0) }}>
+        {plan.kapanis.slogan}
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+const DanismanKapanis: React.FC<{ plan: IlanPlan }> = ({ plan }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const t = frame / fps;
   const g = (d: number) => interpolate(t, [d, d + 0.5], [0, 1], { ...clamp, easing: yumusak });
   const d = plan.danisman;
-  const portre = 300;
+  const portre = 244;
+  // İmza: ad soldan sağa "yazılır" (kalem hızı sabit değil, başta ve sonda yavaşlar).
+  const imzaP = interpolate(t, [0.5, 1.9], [0, 1], { ...clamp, easing: Easing.bezier(0.45, 0, 0.25, 1) });
+  const imzaMetni = d.ad.toLocaleLowerCase("tr-TR").replace(/(^|\s)(\p{L})/gu, (_, b: string, h: string) => b + h.toLocaleUpperCase("tr-TR"));
   return (
     <AbsoluteFill style={{ background: `radial-gradient(circle at 50% 38%, #0A2E80 0%, ${renk.cbMavi} 45%, ${renk.cbMaviKoyu} 100%)`, opacity: g(0) }}>
       <div style={{ position: "absolute", top: G.ust, left: 0, right: 0, display: "flex", justifyContent: "center", opacity: g(0.1) }}>
-        <LogoRozet src={d.logo} yukseklik={130} />
+        <LogoRozet src={d.logo} yukseklik={150} />
       </div>
-      <div style={{ position: "absolute", top: 500, left: (G.W - portre - 16) / 2, opacity: g(0.25), transform: `scale(${0.92 + 0.08 * g(0.25)})` }}>
+      <div style={{ position: "absolute", top: 506, left: (G.W - portre - 16) / 2, opacity: g(0.25), transform: `scale(${0.92 + 0.08 * g(0.25)})` }}>
         <div style={{ width: portre + 16, height: portre + 16, borderRadius: "50%", background: renk.beyaz, padding: 8, boxShadow: "0 20px 50px rgba(0,0,0,0.4)" }}>
-          <Img src={staticFile(d.portre)} style={{ width: portre, height: portre, borderRadius: "50%", objectFit: "cover", objectPosition: "50% 22%" }} />
+          <Img src={staticFile(d.portre)} style={{ width: portre, height: portre, borderRadius: "50%", objectFit: "cover", objectPosition: "50% 30%" }} />
         </div>
       </div>
-      <div style={{ position: "absolute", top: 846, left: G.yan, right: G.yan, textAlign: "center", color: renk.beyaz, opacity: g(0.45) }}>
-        <div style={{ fontFamily: yazi.sans, fontWeight: 700, fontSize: 60, lineHeight: 1.1 }}>{d.ad}</div>
-        <div style={{ fontFamily: yazi.sans, fontWeight: 500, fontSize: 26, letterSpacing: 4, color: renk.griAcik, marginTop: 8 }}>
+      {d.imza ? (
+        <div style={{ position: "absolute", top: 772, left: G.yan, right: G.yan, display: "flex", justifyContent: "center" }}>
+          <div
+            style={{
+              fontFamily: yazi.imza, fontSize: 124, lineHeight: 1.15, color: renk.beyaz, padding: "0 40px", whiteSpace: "nowrap",
+              clipPath: `inset(-20% ${(1 - imzaP) * 100}% -20% 0)`,
+            }}
+          >
+            {imzaMetni}
+          </div>
+        </div>
+      ) : null}
+      <div style={{ position: "absolute", top: d.imza ? 914 : 846, left: G.yan, right: G.yan, textAlign: "center", color: renk.beyaz, opacity: g(d.imza ? 1.6 : 0.45) }}>
+        <div style={{ fontFamily: yazi.sans, fontWeight: 700, fontSize: d.imza ? 38 : 60, lineHeight: 1.1 }}>{d.ad}</div>
+        <div style={{ fontFamily: yazi.sans, fontWeight: 500, fontSize: 24, letterSpacing: 4, color: renk.griAcik, marginTop: 8 }}>
           {tr(d.unvan)}
           {d.ofis ? ` · ${tr(d.ofis)}` : ""}
         </div>
       </div>
       {/* Telefon: en büyük ve en belirgin öğe (danışman talebi). Ortalı kutu x ≈ 284–796: buton sütununa (x > 850) değmez. */}
-      <div style={{ position: "absolute", top: 1010, left: G.yan, right: G.yan, textAlign: "center", opacity: g(0.65), transform: `translateY(${(1 - g(0.65)) * 20}px)` }}>
+      <div style={{ position: "absolute", top: 1030, left: G.yan, right: G.yan, textAlign: "center", opacity: g(0.65), transform: `translateY(${(1 - g(0.65)) * 20}px)` }}>
         <div style={{ fontFamily: yazi.sans, fontWeight: 600, fontSize: 24, letterSpacing: 6, color: "#9CC3FF", display: "flex", justifyContent: "center", alignItems: "center", gap: 12 }}>
           <span style={{ width: 14, height: 14, borderRadius: "50%", background: renk.yesil, display: "inline-block" }} />
           HEMEN ARAYIN
@@ -245,7 +423,7 @@ const Kapanis: React.FC<{ plan: IlanPlan }> = ({ plan }) => {
           {d.telefon}
         </div>
       </div>
-      <div style={{ position: "absolute", top: 1180, left: 120, right: 120, textAlign: "center", fontFamily: yazi.serif, fontStyle: "italic", fontWeight: 500, fontSize: 38, color: renk.griAcik, opacity: g(0.9) }}>
+      <div style={{ position: "absolute", top: 1188, left: 120, right: 120, textAlign: "center", fontFamily: yazi.serif, fontStyle: "italic", fontWeight: 500, fontSize: 38, color: renk.griAcik, opacity: g(0.9) }}>
         {plan.kapanis.slogan}
       </div>
     </AbsoluteFill>
@@ -260,21 +438,29 @@ const Muzik: React.FC<{ plan: IlanPlan }> = ({ plan }) => {
   if (!m) return null;
   // Seslendirmenin bittiği kare: altyazı sonu yaklaşık olarak kullanılır (ses dosyası süresi render'da bilinmez).
   const sesSonu = plan.altyazi.length ? Math.round(plan.altyazi[plan.altyazi.length - 1].to * fps) : durationInFrames;
-  // Konuşma sahnelerinde ve seslendirme süresince müziği kıs (ducking); sonda 1 sn içinde sön.
+  // Konuşma sahnelerinde, ses parçalarında ve seslendirme süresince müziği kıs (ducking); sonda 1 sn içinde sön.
   const araliklar: { a: number; b: number; konusma: boolean }[] = [];
   let bas = 0;
   for (const s of plan.sahneler) {
     araliklar.push({ a: bas * fps, b: (bas + s.sure) * fps, konusma: (s.ses ?? s.tip === "konusma") === true });
     bas += s.sure;
   }
+  // Müzik, konuşma girerken/çıkarken 0.3 sn'de yumuşakça iner/çıkar (ani seviye sıçraması olmasın).
+  const konusmaAraliklari = [
+    ...araliklar.filter((x) => x.konusma),
+    ...plan.sesler.map((x) => ({ a: x.from * fps, b: (x.from + x.sure) * fps })),
+  ];
+  const kisma = (f: number) =>
+    Math.max(0, ...konusmaAraliklari.map((x) => Math.min(interpolate(f, [x.a - 0.3 * fps, x.a], [0, 1], clamp), interpolate(f, [x.b, x.b + 0.3 * fps], [1, 0], clamp))));
   return (
     <Audio
       src={staticFile(m.src)}
       loop
+      trimBefore={Math.round(m.baslangic * fps)}
       volume={(f) => {
-        const r = araliklar.find((x) => f >= x.a && f < x.b);
         const seslendirmeVar = plan.seslendirme && f >= plan.seslendirme.from * fps && f < sesSonu;
-        const hedef = r?.konusma || seslendirmeVar ? m.konusmadaSes : m.ses;
+        const k = seslendirmeVar ? 1 : kisma(f);
+        const hedef = m.ses + (m.konusmadaSes - m.ses) * k;
         const sonus = interpolate(f, [durationInFrames - fps, durationInFrames - 1], [1, 0], clamp);
         return hedef * sonus;
       }}
@@ -308,18 +494,26 @@ export const IlanReel: React.FC<IlanPlan> = (plan) => {
       {etiketler.map(({ from, s }, i) =>
         s.etiket ? (
           <Sequence key={i} from={Math.round(from * fps)} durationInFrames={Math.round(s.sure * fps)} layout="none">
-            <OdaEtiketi metin={s.etiket} frames={Math.round(s.sure * fps)} />
+            <OdaEtiketi metin={s.etiket} frames={Math.round(s.sure * fps)} tanim={s.etiketAlan ?? plan.yerlesim.odaEtiketi} />
           </Sequence>
         ) : null,
       )}
       <UstBant plan={plan} t={t} bitis={icerikSonu} />
-      <BaslikKarti plan={plan} t={t} />
+      {kartlariTopla(plan).map((k, i) => (
+        <BaslikKarti key={i} k={k} t={t} varsayilanAlan={plan.yerlesim.baslik} />
+      ))}
       <BilgiCubugu plan={plan} t={t} />
       <Altyazi plan={plan} t={t} />
       <Sequence from={Math.round(icerikSonu * fps)} durationInFrames={Math.round(plan.kapanis.sure * fps)}>
         <Kapanis plan={plan} />
       </Sequence>
+      {plan.izgaraGoster ? <IzgaraKatmani /> : null}
       <Muzik plan={plan} />
+      {plan.sesler.map((x, i) => (
+        <Sequence key={`ses${i}`} from={Math.round(x.from * fps)} durationInFrames={Math.round(x.sure * fps)} layout="none">
+          <Audio src={staticFile(x.src)} trimBefore={Math.round(x.baslangic * fps)} volume={() => x.ses} />
+        </Sequence>
+      ))}
       {plan.seslendirme ? (
         <Sequence from={Math.round(plan.seslendirme.from * fps)} layout="none">
           <Audio src={staticFile(plan.seslendirme.src)} volume={() => plan.seslendirme?.ses ?? 1} />

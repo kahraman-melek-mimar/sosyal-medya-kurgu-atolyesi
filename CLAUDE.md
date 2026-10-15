@@ -23,11 +23,14 @@ and the delivery format. Default: finished delivery without approval gates (deci
 revise), unless `marka/MARKA.md` → "Çalışma tercihleri" says otherwise.
 
 - Chat in the user's language (default **Turkish**). On-screen text in the language set in `MARKA.md`.
-- Input layout (same every time): main video at `public/main.mov`, supporting assets **and the music track** in
-  `public/assets/`. Never generate music unless asked.
-- Resume point of the current video: `work/progress.md`. Finished videos are archived under `projects/<slug>/`.
+- **Every video lives in its own folder** `projects/<slug>/` (user's explicit wish, Oct 2026):
+  `girdi/` = raw files the user adds (never modified), `assets/` = prepared media used in the video,
+  `work/` = plan, script, transcript, logs, `out/` = deliverables. Root `work`, `out`, `public/assets` are only
+  symlinks to the ACTIVE project: `npm run proje` (list) · `npm run proje -- <slug>` (switch / create).
+  Never put a project's files directly at the repo root. Never generate music unless asked.
+- Resume point of the current video: `work/progress.md` (= `projects/<active>/work/progress.md`).
 - Long jobs run detached with logs in `work/logs/`; always give the ETA and a `! tail -f …` command.
-- Never modify/delete: `public/main.mov`, originals in `public/assets/`, anything in `projects/`, delivered files in `out/`.
+- Never modify/delete: `public/main.mov`, anything in `projects/*/girdi/`, other (non-active) projects, delivered files in `out/`.
 - You cannot hear audio or see HDR: measure, inspect stills, and say what needs the user's ears/eyes.
 - Learning loop: a correction given twice (or "bunu kural yap") → one line in "Ev kuralları". Brand changes →
   `MARKA.md` + `src/theme/theme.ts`.
@@ -40,7 +43,6 @@ revise), unless `marka/MARKA.md` → "Çalışma tercihleri" says otherwise.
 | `src/` | Remotion code: `plan/schema.ts` (plan schema), `events/*` (components), `theme/theme.ts` (design tokens). Any change re-renders all segments. |
 | `scripts/` | Numbered pipeline (`05` new project → `00` probe → `10` proxy → `20/21` transcript → `30` assets → `40` LUTs → `50` validate → `60` render → `65/66` stills → `70` composite → `75` audio → `80` QC; `90` shorts). |
 | `library/` | Reusable across videos: sound selection (effects are synthesised by `scripts/lib/synth.mjs`), optional own SFX, whisper vocabulary, plan example. |
-| `work/`, `out/`, `public/{main.mov,assets,derived,proxy}` | The CURRENT video only (`work/project.json` has its slug). |
-| `projects/` | Archived finished videos (git-ignored). |
+| `projects/<slug>/{girdi,assets,work,out}` | One folder per video (git-ignored). `work`, `out`, `public/assets` at the root are symlinks to the active one (`npm run proje`). |
 
 Checks after code changes: `npx tsc --noEmit && npx eslint src && npm run plan:check`.
