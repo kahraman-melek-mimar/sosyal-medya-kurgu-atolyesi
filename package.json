@@ -54,15 +54,17 @@
     "qc:mix": "node scripts/80-qc.mjs --file work/composite/final-hlg.mix.candidate.mov --audio mix --clean out/final-hlg.temiz-ses.mov --skip-decode --promote",
     "master": "npm run render:gfx && npm run composite && npm run qc && npm run audio && npm run qc:mix",
     "shorts": "node scripts/90-shorts.mjs",
-    "ilan:still": "remotion still src/ilan/giris.ts IlanReel out/ilan-onizleme.png --props=work/ilan-plan.json",
-    "ilan:render": "remotion render src/ilan/giris.ts IlanReel out/.ham-dikey.mp4 --props=work/ilan-plan.json --codec=h264 --crf=18 --pixel-format=yuv420p --color-space=bt709 --audio-codec=aac && node scripts/ilan/30-ses-seviyesi.mjs out/.ham-dikey.mp4 out/final-dikey.mp4 --ham-sil",
+    "ilan:still": "node scripts/ilan/30-render.mjs --kare=60",
+    "ilan:render": "node scripts/ilan/30-render.mjs",
     "ilan:ses-seviyesi": "node scripts/ilan/30-ses-seviyesi.mjs",
     "ilan:studio": "remotion studio src/ilan/giris.ts --props=work/ilan-plan.json",
-    "ilan:seslendir": "node --env-file-if-exists=.env scripts/ilan/10-seslendir.mjs",
-    "ilan:avatar": "node --env-file-if-exists=.env scripts/ilan/20-avatar.mjs",
+    "ilan:seslendir": "node scripts/ilan/10-seslendir.mjs",
+    "ilan:avatar": "node scripts/ilan/20-avatar.mjs",
     "ilan:sozluk": "node scripts/ilan/sozluk-pls.mjs",
     "ilan:test": "node scripts/ilan/okunus-test.mjs",
-    "ilan:hazirla": "node scripts/ilan/05-hazirla.mjs"
+    "ilan:hazirla": "node scripts/ilan/05-hazirla.mjs",
+    "ilan:yeni": "node scripts/ilan/00-yeni.mjs",
+    "ilan:gecis": "node scripts/ilan/40-gecis-kontrol.mjs"
   },
   "sideEffects": [
     "*.css"

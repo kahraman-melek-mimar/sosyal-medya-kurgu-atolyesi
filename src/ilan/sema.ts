@@ -6,8 +6,24 @@ import { ALAN_DESENI } from "./izgara";
 /** Izgara alanı: hücre ("6") ya da iki köşe ("5-12"), isteğe bağlı hiza ("13-16 alt"). Bkz. src/ilan/izgara.ts */
 const alanSchema = z.string().regex(ALAN_DESENI, "Izgara alanı: \"6\", \"5-12\" veya \"13-16 alt\" (hücreler 1–20)");
 
+/**
+ * Sahneye giriş geçişi (ilk sahnede yok sayılır). Anlam taşır, süs değildir — kurallar:
+ * .claude/skills/video-kurgula/references/gecisler.md
+ *   kesme    aynı bölüm, ritim          yumusak  aynı bölüm, sakin (varsayılan)
+ *   kayma    mekân değişir, düşünce sürer (önceki sahne itilerek çıkar, ≈0.4 sn)
+ *   perde    bölüm değişimi: CB mavisi perde geçer (≈0.6 sn, hız kesici)
+ *   karartma zaman/ton değişimi: lacivertten geçiş (≈0.5 sn)
+ */
+export const gecisSchema = z.enum(["kesme", "yumusak", "kayma", "perde", "karartma"]);
+
 export const sahneSchema = z.object({
-  tip: z.enum(["konusma", "mulk-video", "mulk-foto", "karsilastirma"]),
+  /** ara-kart: lacivert zeminde kısa köprü cümlesi (bölüm arası). karsilastirma: öncesi/sonrası perdesi. */
+  tip: z.enum(["konusma", "mulk-video", "mulk-foto", "karsilastirma", "ara-kart"]),
+  gecis: gecisSchema.default("yumusak"),
+  /** ara-kart: köprü cümlesi (≤ 7 kelime), ör. "Asıl sürpriz burada." */
+  metin: z.string().optional(),
+  /** ara-kart: küçük üst etiket, ör. "ÜST KAT". */
+  ust: z.string().optional(),
   /** public/ altındaki dosya; boş bırakılırsa lacivert yer tutucu çizilir (taslak için). */
   src: z.string().optional(),
   /**
@@ -43,10 +59,15 @@ export const sahneSchema = z.object({
   alan: alanSchema.optional(),
   /** Bu sahnenin oda etiketi için ayrı yerleşim (yoksa plan.yerlesim.odaEtiketi). */
   etiketAlan: alanSchema.optional(),
-});
+}).refine((s) => s.tip !== "ara-kart" || !!s.metin?.trim(), { message: 'ara-kart sahnesinde "metin" zorunlu', path: ["metin"] });
 
 export const ilanPlanSchema = z.object({
   fps: z.number().int().positive().default(30),
+  /**
+   * Kurgu klasörü (public/ altına göre), ör. "kurgular/golbasi-villa". Verilirse sahne, seslendirme ve müzik yolları
+   * bu klasöre göredir ("medya/salon.jpg"). Danışman portresi/logosu her zaman public/ köküne göredir.
+   */
+  klasor: z.string().optional(),
   /** Üst banttaki etiket; boşsa `ilan.tur` yazılır (ör. "PROJE İNCELEME" — ilan dışı videolar için). */
   ustEtiket: z.string().optional(),
   ilan: z.object({
@@ -133,5 +154,9 @@ export const ilanPlanSchema = z.object({
 
 export type IlanPlan = z.infer<typeof ilanPlanSchema>;
 export type Sahne = z.infer<typeof sahneSchema>;
+export type Gecis = z.infer<typeof gecisSchema>;
+
+/** Geçiş süreleri (sn). kayma: önceki sahneyle bindirme; perde/karartma: sahne sınırının iki yanına eşit yayılır. */
+export const GECIS_SN = { kayma: 0.4, perde: 0.6, karartma: 0.5 } as const;
 
 export const toplamSure = (p: IlanPlan) => p.sahneler.reduce((s, x) => s + x.sure, 0) + p.kapanis.sure;

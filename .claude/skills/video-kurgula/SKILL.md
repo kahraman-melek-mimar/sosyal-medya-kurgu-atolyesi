@@ -22,6 +22,13 @@ asks for a horizontal / YouTube video:
 - **Real-estate listing videos use the `IlanReel` composition** (built and verified Oct 2026): speaker clips +
   property video/photos, Coldwell Banker identity, closing card with the agent's phone. Workflow, plan fields and
   layout rules: **`references/ilan-reel.md`**. Commands: `npm run ilan:studio | ilan:still | ilan:render`.
+- **Transitions (verbal + visual): `references/gecisler.md`** — read it before writing `metin.md` or choosing the
+  `gecis` of each scene. Every section opens with a concrete "launch pad" line, max 2–3 head-to-tail links, one
+  contrast turn, and each `perde`/`karartma`/`ara-kart` sits on a verbal transition (±0.3 s). Skeletons for listing,
+  avatar and ≤ 15 s story videos are in its section 3.
+- **Delegate the story flow to the `gecis-editoru` agent** (`.claude/agents/gecis-editoru.md`): writing or reviewing
+  `metin.md`, assigning every scene's `gecis` + `ara-kart`, and the pre-render transition audit. Pass the kurgu name
+  and the task (A write / B review / C assign / D audit); relay its report. Check: `npm run ilan:gecis -- <isim>`.
 - Other vertical videos (no listing): start from `IlanReel` and adapt; the old 16:9 components in `src/events/`
   are still on a 1920×1080 canvas.
 

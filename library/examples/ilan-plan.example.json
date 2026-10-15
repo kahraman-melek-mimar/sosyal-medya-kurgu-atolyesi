@@ -38,34 +38,46 @@
       "src": "",
       "sure": 3,
       "hareket": "yakinlas",
-      "etiket": "Dış Cephe"
+      "etiket": "Dış Cephe",
+      "gecis": "perde"
     },
     {
       "tip": "mulk-foto",
       "src": "",
       "sure": 2.5,
       "hareket": "sola",
-      "etiket": "Salon"
+      "etiket": "Salon",
+      "gecis": "kayma"
     },
     {
       "tip": "mulk-foto",
       "src": "",
       "sure": 2.5,
       "hareket": "uzaklas",
-      "etiket": "Mutfak"
+      "etiket": "Mutfak",
+      "gecis": "kesme"
     },
     {
       "tip": "konusma",
       "src": "",
       "sure": 3,
-      "baslangic": 4
+      "baslangic": 4,
+      "gecis": "karartma"
+    },
+    {
+      "tip": "ara-kart",
+      "sure": 1.6,
+      "ust": "Üst Kat",
+      "metin": "Asıl sürpriz burada.",
+      "gecis": "perde"
     },
     {
       "tip": "mulk-foto",
       "src": "",
       "sure": 2.5,
       "hareket": "yakinlas",
-      "etiket": "Ana Yatak Odası"
+      "etiket": "Ana Yatak Odası",
+      "gecis": "kesme"
     }
   ],
   "baslik": {
@@ -73,8 +85,8 @@
     "to": 6.4
   },
   "bilgi": {
-    "from": 6.7,
-    "to": 11.4,
+    "from": 7.1,
+    "to": 11.2,
     "aralik": 0.25
   },
   "altyazi": [

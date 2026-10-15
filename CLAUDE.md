@@ -4,6 +4,9 @@
 > TikTok ve WhatsApp Durum için video hazırlıyor. Tek bir 1080×1920 master üç platformu da karşılar.
 > Platform ölçüleri ve güvenli alanlar: `.claude/skills/video-kurgula/references/dikey-format.md` (her işe başlamadan oku).
 > Emlak ilan videosu = `IlanReel` kompozisyonu (`src/ilan/`, rehber: `.claude/skills/video-kurgula/references/ilan-reel.md`).
+> Geçişler (seslendirme metni + sahne geçişleri): `.claude/skills/video-kurgula/references/gecisler.md` — metin yazmadan önce oku.
+> Metni yazma/gözden geçirme ve sahne geçişlerini atama işi `gecis-editoru` ajanına verilir (`.claude/agents/`); kontrol: `npm run ilan:gecis -- <isim>`.
+> Marka ve danışman bilgileri: `marka/MARKA.md` (Poster Asistanı kurallarıyla aynı; telefon her zaman en büyük öğe).
 > Yatay 16:9 / YouTube akışı (bölüm listesi, `--youtube` dosyası, `90-shorts`) yalnızca kullanıcı açıkça isterse.
 
 This repo is a **reusable editing workshop**: a Remotion graphics layer + FFmpeg/x265 compositing + sound design,

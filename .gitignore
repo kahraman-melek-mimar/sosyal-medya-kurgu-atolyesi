@@ -10,6 +10,9 @@ projects
 work
 public/assets
 public/main.mov
+# Her kurgunun klasörü (medya + metin + plan) kişiseldir (public/kurgular düzeni)
+public/kurgular/*
+!public/kurgular/.gitkeep
 public/proxy
 public/derived
 library/audio/music

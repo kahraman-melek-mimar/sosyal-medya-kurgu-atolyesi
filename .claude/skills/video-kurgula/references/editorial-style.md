@@ -93,6 +93,8 @@ If the source does not allow reframing (1080p or a tight shot): ~25 events, 60�
 - No burned-in captions if the platform adds them; keep graphics out of the bottom UI band and the right button column.
 - The real shot (speaker + room) stays the main picture; graphics live in the band above the head.
 - Pacing: something changes every 1–2 s (punch-in, card item, chip); hook in the first 1–1.5 s.
+- Transitions carry meaning, not decoration: verbal bridges in the narration and the matching scene `gecis` —
+  rules and per-format skeletons in `gecisler.md`.
 
 ## Checklist before rendering
 

@@ -1,22 +1,24 @@
 // İlan metnini ElevenLabs ile seslendirir ve altyazıları kelime zamanlarından üretir.
 //
-//   npm run ilan:seslendir            → work/metin.md → public/assets/seslendirme.mp3 + work/ilan-plan.json güncellenir
-//   npm run ilan:seslendir -- --kuru  → API çağrısı YOK: okunuş metnini ve altyazı parçalarını gösterir (ücretsiz kontrol)
+//   npm run ilan:seslendir -- <kurgu>          → public/kurgular/<kurgu>/metin.md → seslendirme.mp3 + plan.json güncellenir
+//   npm run ilan:seslendir -- <kurgu> --kuru   → API çağrısı YOK: okunuş metnini ve altyazı parçalarını gösterir (ücretsiz)
+//   (kurgu adı verilmezse eski düzen: work/metin.md → public/assets/seslendirme.mp3)
 //
 // Gerekenler (.env): ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID. İsteğe bağlı: ELEVENLABS_DICTIONARY_ID + _VERSION_ID.
 // Ayarlar: library/ilan-ses-ayarlari.json. Telaffuz düzeltmeleri: library/telaffuz/sozluk.tr.json.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import "./lib/env.mjs";
 import { seslendirmePlani } from "./lib/okunus.mjs";
+import { KOK, kurguAdi, kurguGerekli, p, yollar } from "./lib/kurgu.mjs";
 
-const KOK = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const p = (...x) => path.join(KOK, ...x);
 const kuru = process.argv.includes("--kuru");
-const metinDosyasi = process.argv.find((a) => a.endsWith(".md") || a.endsWith(".txt")) ?? p("work/metin.md");
+const y = yollar(kurguAdi());
+kurguGerekli(y);
+const metinDosyasi = process.argv.find((a) => a.endsWith(".md") || a.endsWith(".txt")) ?? y.metin;
 
 if (!existsSync(metinDosyasi)) {
-  console.error(`Metin bulunamadı: ${metinDosyasi}\nİlan metnini work/metin.md dosyasına yazın (düz cümleler; # ile başlayan satırlar okunmaz).`);
+  console.error(`Metin bulunamadı: ${path.relative(KOK, metinDosyasi)}\nİlan metnini bu dosyaya yazın (düz cümleler; # ile başlayan satırlar okunmaz).`);
   process.exit(1);
 }
 const ayar = JSON.parse(readFileSync(p("library/ilan-ses-ayarlari.json"), "utf8"));
@@ -60,9 +62,9 @@ if (!yanit.ok) {
 }
 const veri = await yanit.json();
 
-mkdirSync(p("public/assets"), { recursive: true });
-mkdirSync(p("work"), { recursive: true });
-writeFileSync(p("public/assets/seslendirme.mp3"), Buffer.from(veri.audio_base64, "base64"));
+mkdirSync(path.dirname(y.seslendirme), { recursive: true });
+mkdirSync(path.dirname(y.plan), { recursive: true });
+writeFileSync(y.seslendirme, Buffer.from(veri.audio_base64, "base64"));
 
 // Karakter zamanlarından altyazı zamanları. alignment, gönderdiğimiz metnin karakterleriyle birebirdir;
 // uzunluk tutmazsa (beklenmez) orantılı eşlemeye düşeriz.
@@ -82,14 +84,15 @@ const altyazi = plan.parcalar.map((x, i) => {
   const to = sonraki ? zaman(sonraki.bas, "bas") : zaman(x.son - 1, "son") + ayar.zamanlama.altyaziKuyruk;
   return { from: +(from + ofset).toFixed(3), to: +(to + ofset).toFixed(3), text: x.yazili };
 });
-writeFileSync(p("work/seslendirme.json"), JSON.stringify({ okunus: plan.okunus, sure, birebirHiza: birebir, parcalar: plan.parcalar, altyazi }, null, 2));
+writeFileSync(y.seslendirmeJson, JSON.stringify({ okunus: plan.okunus, sure, birebirHiza: birebir, parcalar: plan.parcalar, altyazi }, null, 2));
 
 // Planı güncelle: seslendirme kanalı + altyazılar.
-const planYolu = p("work/ilan-plan.json");
+const planYolu = y.plan;
 const ilanPlan = existsSync(planYolu)
   ? JSON.parse(readFileSync(planYolu, "utf8"))
   : JSON.parse(readFileSync(p("library/examples/ilan-plan.example.json"), "utf8"));
-ilanPlan.seslendirme = { src: "assets/seslendirme.mp3", from: ofset, ses: 1 };
+if (y.klasor) ilanPlan.klasor = y.klasor;
+ilanPlan.seslendirme = { src: y.seslendirmeSrc, from: ofset, ses: 1 };
 ilanPlan.altyazi = altyazi;
 // Varsayılan müzik: public/marka/muzik.(mp3|m4a|wav) varsa ve planda müzik yoksa eklenir (seslendirmede otomatik kısılır).
 if (!ilanPlan.muzik) {
@@ -99,7 +102,9 @@ if (!ilanPlan.muzik) {
 writeFileSync(planYolu, JSON.stringify(ilanPlan, null, 2));
 
 const sahneToplam = ilanPlan.sahneler.reduce((s, x) => s + x.sure, 0);
-console.log(`\n✓ public/assets/seslendirme.mp3 (${sure.toFixed(1)} sn) · ${altyazi.length} altyazı · work/ilan-plan.json güncellendi`);
+console.log(`
+✓ ${path.relative(KOK, y.seslendirme)} (${sure.toFixed(1)} sn) · ${altyazi.length} altyazı · ${path.relative(KOK, y.plan)} güncellendi`);
 if (!birebir) console.warn("! Hizalama uzunluğu metinle tutmadı; altyazılar orantılı eşlendi — stillerde kontrol edin.");
 if (sahneToplam < sure + ofset) console.warn(`! Sahnelerin toplamı (${sahneToplam.toFixed(1)} sn) seslendirmeden (${(sure + ofset).toFixed(1)} sn) kısa: sahne sürelerini uzatın, yoksa ses kapanış kartının üstüne taşar.`);
-console.log("Sıradaki adım: npm run ilan:avatar (HeyGen) veya doğrudan npm run ilan:render");
+const ek = y.ad ? ` -- ${y.ad}` : "";
+console.log(`Sıradaki adım: npm run ilan:avatar${ek} (HeyGen) veya doğrudan npm run ilan:render${ek}`);

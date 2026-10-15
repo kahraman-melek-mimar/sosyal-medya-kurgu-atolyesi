@@ -1,16 +1,18 @@
 // ElevenLabs seslendirmesiyle HeyGen avatar videosu üretir (dudaklar bu sese senkron).
 //
-//   npm run ilan:avatar   → public/assets/seslendirme.mp3 → HeyGen → public/assets/avatar.mp4
+//   npm run ilan:avatar -- <kurgu>   → public/kurgular/<kurgu>/seslendirme.mp3 → HeyGen → avatar.mp4
+//   (kurgu adı verilmezse eski düzen: public/assets/)
 //
 // Gerekenler (.env): HEYGEN_API_KEY, HEYGEN_AVATAR_ID. Önce: npm run ilan:seslendir.
 // Ayarlar: library/ilan-ses-ayarlari.json → heygen (9:16, 1080p, CB lacivert arka plan).
 // Üretim HeyGen kredisi harcar; aynı ses için yeniden çalıştırmadan önce mevcut avatar.mp4'ü kontrol edin.
+import "./lib/env.mjs";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { KOK, kurguAdi, kurguGerekli, p, yollar } from "./lib/kurgu.mjs";
 
-const KOK = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const p = (...x) => path.join(KOK, ...x);
+const y = yollar(kurguAdi());
+kurguGerekli(y);
 const API = process.env.HEYGEN_BASE_URL || "https://api.heygen.com";
 const { HEYGEN_API_KEY: anahtar, HEYGEN_AVATAR_ID: avatar } = process.env;
 
@@ -18,9 +20,9 @@ if (!anahtar || !avatar) {
   console.error(".env içinde HEYGEN_API_KEY ve HEYGEN_AVATAR_ID gerekli (.env.example'a bakın).");
   process.exit(1);
 }
-const sesYolu = p("public/assets/seslendirme.mp3");
+const sesYolu = y.seslendirme;
 if (!existsSync(sesYolu)) {
-  console.error("public/assets/seslendirme.mp3 yok. Önce: npm run ilan:seslendir");
+  console.error(`${path.relative(KOK, sesYolu)} yok. Önce: npm run ilan:seslendir${y.ad ? ` -- ${y.ad}` : ""}`);
   process.exit(1);
 }
 const ayar = JSON.parse(readFileSync(p("library/ilan-ses-ayarlari.json"), "utf8")).heygen;
@@ -56,7 +58,7 @@ const olustur = await istek("/v3/videos", {
 });
 const videoId = olustur.data?.video_id;
 if (!videoId) throw new Error(`Oluşturma yanıtında data.video_id yok: ${JSON.stringify(olustur)}`);
-writeFileSync(p("work/heygen.json"), JSON.stringify({ videoId, audioId, baslangic: new Date().toISOString() }, null, 2));
+writeFileSync(y.heygenJson, JSON.stringify({ videoId, audioId, baslangic: new Date().toISOString() }, null, 2));
 console.log(`✓ Video başlatıldı (${videoId}). Hazırlanıyor — genelde birkaç dakika sürer…`);
 
 // 3) Bekle (en fazla 30 dk)
@@ -68,13 +70,13 @@ for (let i = 0; i < 180; i++) {
   if (i % 3 === 0) process.stdout.write(`  durum: ${video.status} (${(i + 1) * 10} sn)\n`);
 }
 if (video?.status !== "completed") {
-  console.error(`HeyGen videosu tamamlanmadı: ${video?.status} ${video?.failure_message ?? ""}\nKimlik work/heygen.json içinde; HeyGen panelinden de bakabilirsiniz.`);
+  console.error(`HeyGen videosu tamamlanmadı: ${video?.status} ${video?.failure_message ?? ""}\nKimlik ${path.relative(KOK, y.heygenJson)} içinde; HeyGen panelinden de bakabilirsiniz.`);
   process.exit(1);
 }
 
 // 4) İndir (bağlantı 7 gün geçerli)
 const dosya = await fetch(video.video_url);
 if (!dosya.ok) throw new Error(`İndirme hatası ${dosya.status}`);
-writeFileSync(p("public/assets/avatar.mp4"), Buffer.from(await dosya.arrayBuffer()));
-console.log("✓ public/assets/avatar.mp4 indirildi.");
-console.log('Plan: konuşma sahnelerinde  { "tip": "konusma", "src": "assets/avatar.mp4", "senkron": true }  kullanın; dudaklar seslendirmeyle eşleşir.');
+writeFileSync(y.avatar, Buffer.from(await dosya.arrayBuffer()));
+console.log(`✓ ${path.relative(KOK, y.avatar)} indirildi.`);
+console.log(`Plan: konuşma sahnelerinde  { "tip": "konusma", "src": "${y.avatarSrc}", "senkron": true }  kullanın; dudaklar seslendirmeyle eşleşir.`);
